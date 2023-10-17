@@ -1,4 +1,4 @@
-TARGET := output/sbemu.exe
+TARGET := output/sbemu-x.exe
 CC := i586-pc-msdosdjgpp-gcc
 CXX := i586-pc-msdosdjgpp-g++
 DEBUG ?= 0
