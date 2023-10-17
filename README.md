@@ -3,11 +3,11 @@
 Emulate Sound Blaster and OPL3 in pure DOS using modern
 PCI-based (onboard and add-in card) sound cards.
 
-Friendly fork of [SBEMU](https://github.com/crazii/SBEMU)
+## Changes compared to sbemu
+
+This is obviously a friendly fork of [SBEMU](https://github.com/crazii/SBEMU)
 to allow for cross-compilation, additional driver support,
 continuous integration, bug fixes, etc..
-
-## Changes compared to sbemu
 
 Ideally, we'd like to get these changes integrated upstream
 eventually.
