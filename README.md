@@ -1,24 +1,75 @@
-# SBEMU
-Sound blaster emulation with OPL3 for AC97.
+# SBEMU-X
 
-Supported Sound cards:
- * Intel ICH / nForce
- * Intel High Definition Audio
- * VIA VT82C686, VT8233
- * SB Live/Audigy
+Emulate Sound Blaster and OPL3 in pure DOS using modern
+PCI-based (onboard and add-in card) sound cards.
 
-The VT82C868 & ICH4 are tested working on real machine.\
-ICH & HDA tested working in virtualbox, not verified on real machine yet.\
-HDA tested working by community.
+Friendly fork of [SBEMU](https://github.com/crazii/SBEMU)
+to allow for cross-compilation, additional driver support,
+continuous integration, bug fixes, etc..
 
-Emulated modes/cards:\
-8 bit & 16 bit DMA (mono, stereo, high-speed)\
-Sound blaster 1.0, 2.0, Pro, 16.
+## Changes compared to sbemu
 
-Requirements:
- * HDPMI32i (HDPMI with IOPL0) (https://github.com/crazii/HX)
- * QEMM (optional, used for real mode games) or JEMM (https://github.com/Baron-von-Riedesel/Jemm)
- 
-SBEMU uses some source codes from:
- * MPXPlay: https://mpxplay.sourceforge.net/, for sound card drivers
- * DOSBox: https://www.dosbox.com/, for OPL3 FM emulation
+Ideally, we'd like to get these changes integrated upstream
+eventually.
+
+For now, this fork provides additional support:
+
+* Build support under Linux, Windows, macOS (DJGPP cross-compilation)
+* SIS 7012 support
+
+## Supported sound cards
+
+Source code from [MPXPlay](https://mpxplay.sourceforge.net/)
+is used to support the following sound cards/chips.
+
+Enabled and working:
+
+ * `sc_ich`: Intel ICH / nForce / SIS 7012
+ * `sc_inthd`: Intel High Definition Audio
+ * `sc_via82`: VIA VT82C686, VT8233
+ * `sc_sbliv`: SB Live! / Audigy
+ * `sc_sbl24`: SB Audigy LS (CA0106)
+
+Support compiled-in, but untested:
+
+ * `sc_es1371`: Ensoniq ES1371/1373
+
+Cards with known issue:
+
+ * AC97 with AD1980 SoundMAX codec (muted audio, WIP)
+
+Source code exists, but "doesn't work yet":
+
+ * `sc_sbxfi`: Creative X-Fi EMU20KX
+
+Source code exists, but not sure if viable:
+
+ * `sc_wss`: Windows Sound System compatible cards
+ * `sc_cmi`: CMI 8338/8738 (PCI) cards
+ * `sc_ess`: ESS card handling
+ * `sc_gus`: Gravis UltraSound
+ * `sc_midas`: MIDAS library handling
+
+## Emulated modes
+
+ * 8-bit and 16-bit DMA (mono, stereo, high-speed)
+ * Sound Blaster 1.0, 2.0, Pro, 16
+ * OPL3 FM via [DOSBox' OPL3 FM implementation](https://www.dosbox.com/)
+
+## Requirements
+
+ * [HDPMI32i](https://github.com/crazii/HX) (HDPMI with IOPL0)
+ * Optional, for real-mode game support (I/O trapping):
+   * [JEMM](https://github.com/Baron-von-Riedesel/Jemm) with QPIEMU.DLL loaded
+   * or [QEMM](https://en.wikipedia.org/wiki/QEMM), commercial software
+
+For memory management, use either:
+
+ * `JEMMEX` only: Provides both HIMEM + EMM
+ * `HIMEMX` and `JEMM386`: Separate HIMEM + EMM
+
+In both cases, use `JLOAD` (from the Jemm distribution)
+to load `QPIEMU.DLL` before starting `SBEMU`,
+so that real-mode support is enabled. If you don't load
+JEMM+QPIEMU (or QEMM), only protected mode applications
+will be supported.
