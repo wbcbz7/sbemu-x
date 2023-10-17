@@ -15,8 +15,10 @@ eventually.
 For now, this fork provides additional support:
 
 * Build support under Linux, Windows, macOS (DJGPP cross-compilation)
-* SIS 7012 support
 * Nicer text-mode user interface
+* Additional sound card support
+  * SIS 7012
+  * CMI 8338 / 8738 (untested)
 
 ## Supported sound cards
 
@@ -34,6 +36,7 @@ Enabled and working:
 Support compiled-in, but untested:
 
  * `sc_es1371`: Ensoniq ES1371/1373
+ * `sc_cmi`: C-Media CMI8338/8738
 
 Cards with known issue:
 
