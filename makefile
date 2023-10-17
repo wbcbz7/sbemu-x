@@ -5,7 +5,7 @@ DEBUG ?= 0
 
 VERSION ?= $(shell git describe --tags)
 
-INCLUDES := -I./mpxplay -I./sbemu
+INCLUDES := -Impxplay -Isbemu -Iiotrap
 DEFINES := -D__DOS__ -DSBEMU -DDEBUG=$(DEBUG) -DMAIN_SBEMU_VER=\"$(VERSION)\"
 CFLAGS := -fcommon -march=i386 -Os $(INCLUDES) $(DEFINES)
 LDFLAGS := -lstdc++ -lm
@@ -64,11 +64,11 @@ SBEMU_SRC := sbemu/dbopl.cpp \
 	     sbemu/dpmi/dpmi_dj2.c \
 	     sbemu/dpmi/dpmi_tsr.c \
 	     sbemu/dpmi/gormcb.c \
+	     iotrap/qemm.c \
+	     iotrap/hdpmipt.c \
 	     main.c \
-	     qemm.c \
 	     test.c \
 	     utility.c \
-	     hdpmipt.c \
 
 SRC := $(CARDS_SRC) $(MIXER_SRC) $(NEWFUNC_SRC) $(SBEMU_SRC)
 OBJS := $(patsubst %.cpp,output/%.o,$(patsubst %.c,output/%.o,$(SRC)))
