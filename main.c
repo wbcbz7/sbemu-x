@@ -500,7 +500,8 @@ int main(int argc, char* argv[])
     BOOL enableRM = MAIN_Options[OPT_RM].value;
 
     if (!enablePM && !enableRM) {
-        printf("Both real mode & protected mode support are disabled, exiting.\n");
+        textcolor(RED);
+        cprintf("Both real mode & protected mode support are disabled, exiting.\r\n");
         return 1;
     }
 
