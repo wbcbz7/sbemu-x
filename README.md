@@ -16,6 +16,7 @@ For now, this fork provides additional support:
 
 * Build support under Linux, Windows, macOS (DJGPP cross-compilation)
 * SIS 7012 support
+* Nicer text-mode user interface
 
 ## Supported sound cards
 
