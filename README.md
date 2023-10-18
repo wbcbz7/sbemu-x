@@ -19,6 +19,7 @@ For now, this fork provides additional support:
 * Additional sound card support
   * SIS 7012
   * CMI 8338 / 8738 (untested)
+* CD-Audio (via 4-pin audio header) unmute/mixer support
 
 ## Supported sound cards
 
@@ -132,3 +133,25 @@ processes to speed up building:
 
 After the build is done, you'll find the build result in a folder called
 `output`, i.e. `output/sbemu-x.exe`.
+
+## Feature usage
+
+### CD Audio
+
+CD audio support in DOS requires two parts:
+
+1. Audio control (play/pause/seek/...) via `MSCDEX` (or `SHSUCDX`)
+2. Volume control via the mixer
+
+For part one, you need to have a CD-ROM drive with analog audio out
+and an MSCDEX-compatible CD-ROM driver set up.
+
+Part two (volume control) is taken care of by SBEMU-X on startup.
+
+To adjust the volume of CD-Audio (by default it's 100% volume),
+you can use any Sound Blaster-compatible program, such as "SBMIX",
+as SBEMU-X does emulate and forward CD-Audio mixer settings.
+
+Don't forget that to actually hear anything, you need to connect
+an analog audio cable from your CD-ROM drive to the 4-pin CD-IN
+header on your soundcard (or motherboard for onboard sound).
