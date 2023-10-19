@@ -77,3 +77,58 @@ to load `QPIEMU.DLL` before starting `SBEMU`,
 so that real-mode support is enabled. If you don't load
 JEMM+QPIEMU (or QEMM), only protected mode applications
 will be supported.
+
+## Building from source
+
+macOS, Linux and Windows is supported. For Windows, consider using
+WSL2 + Linux binaries. DOS isn't supported officially, because why
+would you use a single-tasking operating system (either emulated or
+on old hardware) to build this project? :)
+
+### Installing a cross-compiler (DJGPP)
+
+Scripts to build a recent GCC toolchain for DJGPP are available here:
+
+* https://github.com/andrewwutw/build-djgpp
+
+There's also prebuilt releases for the toolchain if you don't want
+to build DJGPP yourself. The current version (October 2023) is using
+GCC 12.2.0, but in the future newer GCC versions might become available:
+
+* https://github.com/andrewwutw/build-djgpp/releases
+
+### Installing make
+
+This assumes a Debian/Ubuntu installation. If you are using any other
+distro, I'm assuming you know your way around and can translate those
+instructions to your specific distribution.
+
+To get `make` and other tools, it's easiest to install host build tools:
+
+   sudo apt install -y build-essential
+
+On MacOS, install the Xcode command-line tools, which should give you
+`make` and other host utilities.
+
+If you are planning on building DJGPP from source, some additional build
+tools are needed. Refer to the `build-djgpp` README file for details.
+
+### Building the project
+
+The `bin` folder of your DJGPP toolchain needs to be in your `$PATH`,
+so that the following command works and outputs your DJGPP GCC version:
+
+    i586-pc-msdosdjgpp-gcc --version
+
+If this works, building the project is as simple as:
+
+    make
+
+Because you are on a modern machine with multi-core CPUs, do a parallel
+build, which is faster, for example, for a quad-core CPU, use 8 parallel
+processes to speed up building:
+
+    make -j8
+
+After the build is done, you'll find the build result in a folder called
+`output`, i.e. `output/sbemu-x.exe`.
