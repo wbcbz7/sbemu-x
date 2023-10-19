@@ -15,6 +15,7 @@
 #include <untrapio.h>
 #include "qemm.h"
 #include "hdpmipt.h"
+#include "serial.h"
 
 #include <mpxplay.h>
 #include <au_mixer/mix_func.h>
@@ -225,6 +226,7 @@ struct MAIN_OPT
     int setcmd; //set by command line
 }MAIN_Options[] = {
     "/?", "Show this help screen", FALSE, 0,
+    "/DBG", "Debug output (0=console, 1=COM1, 2=COM2)", 0, 0,
 
     "/A", "IO address (220 or 240) [*]", 0x220, 0,
     "/I", "IRQ number (5 or 7) [*]", 7, 0,
@@ -249,6 +251,8 @@ struct MAIN_OPT
 enum EOption
 {
     OPT_Help,
+    OPT_DEBUG_OUTPUT,
+
     OPT_ADDR,
     OPT_IRQ,
     OPT_DMA,
@@ -337,6 +341,19 @@ print_enabled_newline(bool enabled)
     cprintf(".\r\n");
 }
 
+static void
+update_serial_debug_output()
+{
+    bool enabled = (MAIN_Options[OPT_DEBUG_OUTPUT].value != 0);
+    if (!enabled) {
+        _LOG("Serial port debugging disabled.\n");
+    }
+    ser_setup(MAIN_Options[OPT_DEBUG_OUTPUT].value);
+    if (enabled) {
+        _LOG("Serial port debugging enabled.\n");
+    }
+}
+
 int main(int argc, char* argv[])
 {
     textcolor(CYAN);
@@ -414,6 +431,10 @@ int main(int argc, char* argv[])
                 break;
             }
         }
+    }
+
+    if (MAIN_Options[OPT_DEBUG_OUTPUT].value) {
+        update_serial_debug_output();
     }
 
     if(MAIN_Options[OPT_ADDR].value != 0x220 && MAIN_Options[OPT_ADDR].value != 0x240)
@@ -1081,6 +1102,13 @@ static void MAIN_TSR_Interrupt()
             #endif
             int irq = aui.card_irq;
             PIC_MaskIRQ(irq);
+
+            if(MAIN_Options[OPT_DEBUG_OUTPUT].value != opt[OPT_DEBUG_OUTPUT].value)
+            {
+                MAIN_Options[OPT_DEBUG_OUTPUT].value = opt[OPT_DEBUG_OUTPUT].value;
+                update_serial_debug_output();
+            }
+
             if(MAIN_Options[OPT_OUTPUT].value != opt[OPT_OUTPUT].value || MAIN_Options[OPT_RATE].value != opt[OPT_RATE].value || opt[OPT_RESET].value)
             {
                 if(opt[OPT_OUTPUT].value != MAIN_Options[OPT_OUTPUT].value || opt[OPT_RESET].value)
