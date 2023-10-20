@@ -20,6 +20,7 @@ For now, this fork provides additional support:
   * SIS 7012
   * CMI 8338 / 8738 (untested)
 * CD-Audio (via 4-pin audio header) unmute/mixer support
+* Toggleable debug output on serial port (/DBG0, /DBG1, /DBG2)
 
 ## Supported sound cards
 
@@ -155,3 +156,25 @@ as SBEMU-X does emulate and forward CD-Audio mixer settings.
 Don't forget that to actually hear anything, you need to connect
 an analog audio cable from your CD-ROM drive to the 4-pin CD-IN
 header on your soundcard (or motherboard for onboard sound).
+
+
+### Debug output on serial
+
+You can configure SBEMU to output its debug messages to the serial
+port instead of the console. This also works in the background when
+games are full-screen, and so is really useful for debugging.
+
+To build SBEMU-X with debug output, use:
+
+    make DEBUG=1
+
+Then, launch SBEMU-X with this command for debug output (9600, 8N1)
+on COM1 (use `/DBG2` for COM2):
+
+    sbemu-x /DBG1
+
+To disable serial port debug output at runtime, use:
+
+    sbemu-x /DBG0
+
+Serial debug output is disabled by default.
