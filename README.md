@@ -21,6 +21,7 @@ For now, this fork provides additional support:
   * CMI 8338 / 8738 (untested)
 * CD-Audio (via 4-pin audio header) unmute/mixer support
 * Toggleable debug output on serial port (/DBG0, /DBG1, /DBG2)
+* Fix audio routing on AC97 (ICH5) with AD1980 (FSC-E600 D1534 with i865G)
 
 ## Supported sound cards
 
