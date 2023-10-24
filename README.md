@@ -41,10 +41,6 @@ Support compiled-in, but untested:
  * `sc_es1371`: Ensoniq ES1371/1373
  * `sc_cmi`: C-Media CMI8338/8738
 
-Cards with known issue:
-
- * AC97 with AD1980 SoundMAX codec (muted audio, WIP)
-
 Source code exists, but "doesn't work yet":
 
  * `sc_sbxfi`: Creative X-Fi EMU20KX
