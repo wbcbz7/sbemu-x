@@ -523,6 +523,8 @@ int main(int argc, char* argv[])
     if (!enablePM && !enableRM) {
         textcolor(RED);
         cprintf("Both real mode & protected mode support are disabled, exiting.\r\n");
+        // play nice with command line
+        textcolor(LIGHTGRAY);
         return 1;
     }
 
