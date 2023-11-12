@@ -4,6 +4,8 @@
 #include "ctadpcm.h"
 #include <string.h>
 
+#include "dirpcm.h"
+
 typedef struct 
 {
     int step;
@@ -41,7 +43,6 @@ static int SBEMU_DSPDATA_Subindex = 0;
 static int SBEMU_TriggerIRQ = 0;
 static int SBEMU_Pos = 0;
 static int SBEMU_DetectionCounter = 0;
-static int SBEMU_DirectCount = 0;
 static int SBEMU_UseTimeConst = 0;
 static int SBEMU_FixTC = 0;
 static uint8_t SBEMU_IRQMap[4] = {2,5,7,10};
@@ -64,8 +65,6 @@ static int SBEMU_TimeConstantMapMono[][2] =
 static uint8_t SBEMU_Copyright[] = "COPYRIGHT (C) CREATIVE TECHNOLOGY LTD, 1992.";
 
 static uint8_t SBEMU_MixerRegs[256];
-#define SBEMU_DIRECT_BUFFER_SIZE 1024
-static uint8_t SBEMU_DirectBuffer[SBEMU_DIRECT_BUFFER_SIZE];
 
 static int SBEMU_Indexof(uint8_t* array, int count, uint8_t  val)
 {
@@ -192,8 +191,6 @@ void SBEMU_DSP_Reset(uint16_t port, uint8_t value)
         SBEMU_HighSpeed = 0;
         SBEMU_TriggerIRQ = 0;
         SBEMU_DetectionCounter = 0;
-        SBEMU_DirectCount = 0;
-        SBEMU_DirectBuffer[0] = 0;
         SBEMU_DMAID_A = 0xAA;
         SBEMU_DMAID_X = 0x96;
         SBEMU_UseTimeConst = 0;
@@ -410,7 +407,7 @@ void SBEMU_DSP_Write(uint16_t port, uint8_t value)
             break;
             case SBEMU_DSPCMD_DIRECT:
             {
-                SBEMU_DirectBuffer[(SBEMU_DirectCount++)%SBEMU_DIRECT_BUFFER_SIZE] = value;
+                direct_pcm_push_mono_u8(value);
                 SBEMU_DSPCMD_Subindex = 2;
             }
             break;
@@ -679,27 +676,6 @@ int SBEMU_DecodeADPCM(uint8_t* adpcm, int bytes)
     free(pcm);
     return outcount;
 }
-
-int SBEMU_GetDirectCount()
-{
-    return SBEMU_DirectCount;
-}
-
-void SBEMU_ResetDirect()
-{
-#if 1
-    SBEMU_DirectCount = 0;
-#else
-    //SBEMU_DirectBuffer[0] = SBEMU_DirectCount > 1 ? SBEMU_DirectBuffer[SBEMU_DirectCount-1] : 0; //leave one sample for next interpolation
-    //SBEMU_DirectCount = 1;
-#endif
-}
-
-const uint8_t* SBEMU_GetDirectPCM8()
-{
-    return SBEMU_DirectBuffer;
-}
-
 
 int SBEMU_GetDetectionCounter()
 {

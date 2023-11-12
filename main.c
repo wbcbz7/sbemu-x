@@ -12,6 +12,8 @@
 #include <vdma.h>
 #include <virq.h>
 #include <sbemu.h>
+#include <dirpcm.h>
+#include <covoxspk.h>
 #include <untrapio.h>
 #include "qemm.h"
 #include "hdpmipt.h"
@@ -122,6 +124,47 @@ static uint32_t MAIN_SB_DSP_ReadINT16BitACK(uint32_t port, uint32_t val, uint32_
     return out ? val : (val &=~0xFF, val |= SBEMU_DSP_INT16ACK(port));
 }
 
+
+static uint32_t MAIN_COVOX_DATA(uint32_t port, uint32_t val, uint32_t out)
+{
+    return out ? covox_data_write(port, val) : covox_data_read(port);
+}
+static uint32_t MAIN_COVOX_STATUS(uint32_t port, uint32_t val, uint32_t out)
+{
+    return out ? covox_status_write(port, val) : covox_status_read(port);
+}
+static uint32_t MAIN_COVOX_CONTROL(uint32_t port, uint32_t val, uint32_t out)
+{
+    return out ? covox_control_write(port, val) : covox_control_read(port);
+}
+
+static uint32_t MAIN_SPK_CONTROL(uint32_t port, uint32_t val, uint32_t out)
+{
+    return out ? pcspeaker_control_write(port, val) : pcspeaker_control_read(port);
+}
+static uint32_t MAIN_SPK_TIMER2(uint32_t port, uint32_t val, uint32_t out)
+{
+    return out ? pcspeaker_timer2_write(port, val) : pcspeaker_timer2_read(port);
+}
+static uint32_t MAIN_SPK_TIMERCTRL(uint32_t port, uint32_t val, uint32_t out)
+{
+    return out ? pcspeaker_timerctrl_write(port, val) : pcspeaker_timerctrl_read(port);
+}
+
+// Covox/Disney Sound Source emulation IODT
+static QEMM_IODT MAIN_COVOX_IODT[] = {
+    0x378, &MAIN_COVOX_DATA,
+    0x379, &MAIN_COVOX_STATUS,
+    0x37A, &MAIN_COVOX_CONTROL,
+};
+
+// PC-Speaker emulation IODT
+static QEMM_IODT MAIN_SPK_IODT[] = {
+    0x61,  &MAIN_SPK_CONTROL,
+    0x42,  &MAIN_SPK_TIMER2,
+    0x43,  &MAIN_SPK_TIMERCTRL,
+};
+
 static QEMM_IODT MAIN_OPL3IODT[4] =
 {
     0x388, &MAIN_OPL3_388,
@@ -200,6 +243,11 @@ static QEMM_IODT MAIN_SB_IODT[13] =
     0x0F, &MAIN_SB_DSP_ReadINT16BitACK,
 };
 
+QEMM_IOPT COVOX_IOPT;
+QEMM_IOPT COVOX_IOPT_PM;
+QEMM_IOPT SPK_IODT;
+QEMM_IOPT SPK_IODT_PM;
+
 QEMM_IOPT OPL3IOPT;
 QEMM_IOPT OPL3IOPT_PM;
 QEMM_IOPT MAIN_VDMA_IOPT;
@@ -247,6 +295,8 @@ struct MAIN_OPT
     "/SC", "Select sound card index in list (/SCL)", 0, MAIN_SETCMD_HIDDEN,
     "/R", "Reset sound card driver", 0, MAIN_SETCMD_HIDDEN,
 
+    "/CVX", "Enable Covox Speech Thing emulation as LPTx (1/2)", 0, 0,
+    "/SPK", "Enable PC-Speaker emulation", 0, 0,
     NULL, NULL, 0,
 };
 enum EOption
@@ -269,6 +319,9 @@ enum EOption
     OPT_SCLIST,
     OPT_SC,
     OPT_RESET,
+
+    OPT_COVOX,
+    OPT_PCSPK,
 
     OPT_COUNT,
 };
@@ -444,6 +497,10 @@ int main(int argc, char* argv[])
         printf("Error: Invalid IO port address: %x.\n", MAIN_Options[OPT_ADDR].value);
         return 1;
     }
+    if (MAIN_Options[OPT_COVOX].value > 2) {
+        printf("Error: Invalid Covox LPT index: %x.\n", MAIN_Options[OPT_COVOX].value);
+        return 1;
+    }
     if(MAIN_Options[OPT_IRQ].value != 0x5 && MAIN_Options[OPT_IRQ].value != 0x7)
     {
         printf("Error: invalid IRQ: %d.\n", MAIN_Options[OPT_IRQ].value);
@@ -530,6 +587,12 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // initialize direct buffer
+    if (!direct_pcm_init(SBEMU_DIRECT_BUFFER_SIZE)) {
+        printf("Error: unable to allocate memory for direct PCM buffer\n");
+        return 1;
+    }
+
     if(MAIN_Options[OPT_SCLIST].value)
         aui.card_controlbits |= AUINFOS_CARDCNTRLBIT_TESTCARD; //note: this bit will make aui.card_handler == NULL and quit.
     if(MAIN_Options[OPT_SC].value)
@@ -583,7 +646,37 @@ int main(int argc, char* argv[])
         printf("OPL3 emulation at port 388: ");
         print_enabled_newline(true);
     }
-    
+
+    // initialize Covox/PC Speaker emulations
+    if (!covoxspk_init(MAIN_Options[OPT_COVOX].value, 0, 0)) {
+        printf("Warning: unable to initialize Covox/PC-Speaker emulation\n");
+        MAIN_Options[OPT_COVOX].value = 0;
+        MAIN_Options[OPT_PCSPK].value = 0;
+    }
+
+    // install Covox traps
+    if (MAIN_Options[OPT_COVOX].value) {
+        // fixup port values
+        for (int i = 0; i < countof(MAIN_COVOX_IODT); ++i)
+            MAIN_COVOX_IODT[i].port -= ((MAIN_Options[OPT_COVOX].value << 8) - 0x100);
+        
+        // install traps
+        if(enableRM && !QEMM_Install_IOPortTrap(MAIN_COVOX_IODT, countof(MAIN_COVOX_IODT), &COVOX_IOPT))
+        {
+            printf("Error: Failed installing IO port trap for QEMM.\n");
+            return 1;
+        }
+        if(enablePM && !HDPMIPT_Install_IOPortTrap(MAIN_COVOX_IODT[0].port, MAIN_COVOX_IODT[0].port+2, MAIN_COVOX_IODT, countof(MAIN_COVOX_IODT), &COVOX_IOPT_PM))
+        {
+            printf("Error: Failed installing IO port trap for HDPMI.\n");
+            if(enableRM) QEMM_Uninstall_IOPortTrap(&COVOX_IOPT);
+            return 1;          
+        }
+
+        printf("Covox emulation at port %x: ", MAIN_COVOX_IODT[0].port);
+        print_enabled_newline(true);
+    }
+
     MAIN_SbemuExtFun.StartPlayback = NULL; //not used
     MAIN_SbemuExtFun.RaiseIRQ = NULL;
     MAIN_SbemuExtFun.DMA_Size = &VDMA_GetCounter;
@@ -947,12 +1040,12 @@ static void MAIN_Interrupt()
         //    MAIN_PCM[i*2+1] = MAIN_PCM[i*2] = 0;
         samples = min(samples, pos);
     }
-    else if(SBEMU_GetDirectCount()>=3)
+    else if(direct_pcm_get_size()>=3)
     {
-        samples = SBEMU_GetDirectCount();
+        samples = direct_pcm_get_size();
         _LOG("direct out:%d %d\n",samples,aui.card_samples_per_int);
-        memcpy(MAIN_PCM, SBEMU_GetDirectPCM8(), samples);
-        SBEMU_ResetDirect();
+        memcpy(MAIN_PCM, direct_pcm_get_data(), samples);
+        direct_pcm_clear();
 #if 0   //fix noise for some games - SBEMU-X NOTE: unlikely to be needed
         int zeros = TRUE;
         for(int i = 0; i < samples && zeros; ++i)
@@ -974,9 +1067,10 @@ static void MAIN_Interrupt()
         //for(int i = 0; i < samples; ++i) _LOG("%d ",MAIN_PCM[i]); _LOG("\n");
         cv_channels_1_to_n(MAIN_PCM, samples, 2, 2);
         digital = TRUE;
-    }
-    else if(!MAIN_Options[OPT_OPL].value)
+    } else if(!MAIN_Options[OPT_OPL].value) {
+        _LOG("silence:%d %d\n",aui.card_samples_per_int);
         memset(MAIN_PCM, 0, samples*sizeof(int16_t)*2); //output muted samples.
+    }
 
     if(MAIN_Options[OPT_OPL].value)
     {
@@ -1191,7 +1285,9 @@ static void MAIN_TSR_Interrupt()
             }
 
             if(MAIN_Options[OPT_OPL].value == opt[OPT_OPL].value && MAIN_Options[OPT_ADDR].value == opt[OPT_ADDR].value &&
-               MAIN_Options[OPT_PM].value == opt[OPT_PM].value && MAIN_Options[OPT_RM].value == opt[OPT_RM].value && MAIN_Options[OPT_FIX_TC].value == opt[OPT_FIX_TC].value)
+               MAIN_Options[OPT_PM].value == opt[OPT_PM].value && MAIN_Options[OPT_RM].value == opt[OPT_RM].value &&
+               MAIN_Options[OPT_FIX_TC].value == opt[OPT_FIX_TC].value && MAIN_Options[OPT_COVOX].value == opt[OPT_COVOX].value && 
+               MAIN_Options[OPT_PCSPK].value == opt[OPT_PCSPK].value)
             {
                 free(opt);
                 return;
@@ -1232,6 +1328,15 @@ static void MAIN_TSR_Interrupt()
                 _LOG("install opl\n");
                 if(opt[OPT_RM].value) QEMM_Install_IOPortTrap(MAIN_OPL3IODT, 4, &OPL3IOPT);
                 if(opt[OPT_PM].value) HDPMIPT_Install_IOPortTrap(0x388, 0x38B, MAIN_OPL3IODT, 4, &OPL3IOPT_PM);
+            }
+
+            if(opt[OPT_COVOX].value)
+            {
+                _LOG("install covox\n");
+                for(int i = 0; i < countof(MAIN_COVOX_IODT); ++i)
+                    MAIN_COVOX_IODT[i].port = MAIN_COVOX_IODT[i].port - ((MAIN_Options[OPT_COVOX].value + opt[OPT_COVOX].value) << 8);
+                if(opt[OPT_RM].value) QEMM_Install_IOPortTrap(MAIN_COVOX_IODT, countof(MAIN_COVOX_IODT), &COVOX_IOPT);
+                if(opt[OPT_PM].value) HDPMIPT_Install_IOPortTrap(MAIN_COVOX_IODT[0].port, MAIN_COVOX_IODT[0].port+2, MAIN_COVOX_IODT, countof(MAIN_COVOX_IODT), &COVOX_IOPT_PM);
             }
 
             QEMM_IODT* SB_Iodt = opt[OPT_OPL].value ? MAIN_SB_IODT : MAIN_SB_IODT+4;
@@ -1282,6 +1387,7 @@ static void MAIN_TSR_Interrupt()
             MAIN_Options[OPT_PM].value = opt[OPT_PM].value;
             MAIN_Options[OPT_RM].value = opt[OPT_RM].value;
             MAIN_Options[OPT_OPL].value = opt[OPT_OPL].value;
+            MAIN_Options[OPT_COVOX].value = opt[OPT_COVOX].value;
 
             free(opt);
         }

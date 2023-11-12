@@ -8,4 +8,7 @@
 
 #define SBEMU_BITS 16
 
+// direct buffer size for SB Direct DAC/Covox/PC-Speaker PWM emulation
+#define SBEMU_DIRECT_BUFFER_SIZE 1024
+
 #endif//_SBEMUCFG_H_

@@ -55,6 +55,8 @@ NEWFUNC_SRC := mpxplay/newfunc/fpu.c \
 SBEMU_SRC := sbemu/dbopl.cpp \
 	     sbemu/opl3emu.cpp \
 	     sbemu/pic.c \
+	     sbemu/covoxspk.c \
+	     sbemu/dirpcm.c \
 	     sbemu/sbemu.c \
 	     sbemu/untrapio.c \
 	     sbemu/vdma.c \
