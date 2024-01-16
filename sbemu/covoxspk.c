@@ -89,6 +89,11 @@ int covoxspk_init(int covox, int stereo_on_1, int pcspeaker) {
     return 1;   // ok
 }
 
+void covoxspk_set_bda_lpt(uint16_t port) {
+    // dirty hack (but should work)
+    DPMI_CopyLinear(0x408, DPMI_PTR2L(&port), sizeof(uint16_t));
+}
+
 int covoxspk_done() {
     return 1;   // ok
 }

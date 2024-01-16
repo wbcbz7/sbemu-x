@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include "dpmi.h"
 
+#include <x86intrin.h>
+
 #define DUMP_BUFF_SIZE 1024U
 
 #ifndef DEBUG

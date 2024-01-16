@@ -21,6 +21,7 @@
 
 #define DIV_9600			(115200 / 9600)
 #define DIV_38400			(115200 / 38400)
+#define DIV_115200			(115200 / 115200)
 #define LCTL_8N1			0x03
 #define LCTL_DLAB			0x80
 #define MCTL_DTR_RTS_OUT2	0x0b
@@ -43,8 +44,8 @@ ser_setup(int sdev)
 
     /* set clock divisor */
     outp(iobase | UART_LCTL, LCTL_DLAB);
-    outp(iobase | UART_DIVLO, DIV_9600 & 0xff);
-    outp(iobase | UART_DIVHI, DIV_9600 >> 8);
+    outp(iobase | UART_DIVLO, DIV_115200 & 0xff);
+    outp(iobase | UART_DIVHI, DIV_115200 >> 8);
 
     /* set format 8n1 */
     outp(iobase | UART_LCTL, LCTL_8N1);

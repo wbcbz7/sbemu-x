@@ -62,3 +62,7 @@ void direct_pcm_push_mono_i16(int16_t sample) {
 
 void direct_pcm_push_stereo_u16(int16_t left, int16_t right) {
 }
+
+
+// ------------------------
+// render direct PCM buffer, called each interrupt tick

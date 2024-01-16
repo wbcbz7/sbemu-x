@@ -673,6 +673,9 @@ int main(int argc, char* argv[])
             return 1;          
         }
 
+        // update BIOS Data Area
+        covoxspk_set_bda_lpt(MAIN_COVOX_IODT[0].port);
+
         printf("Covox emulation at port %x: ", MAIN_COVOX_IODT[0].port);
         print_enabled_newline(true);
     }
@@ -1042,9 +1045,10 @@ static void MAIN_Interrupt()
     }
     else if(direct_pcm_get_size()>=3)
     {
-        samples = direct_pcm_get_size();
-        _LOG("direct out:%d %d\n",samples,aui.card_samples_per_int);
-        memcpy(MAIN_PCM, direct_pcm_get_data(), samples);
+        //_LOG("%llu:", __rdtsc());
+        uint32_t direct_count = direct_pcm_get_size();
+        //_LOG(" %d %d %d\n",samples,aui.card_samples_per_int,AU_cardbuf_space(&aui));
+        memcpy(MAIN_PCM, direct_pcm_get_data(), direct_count);
         direct_pcm_clear();
 #if 0   //fix noise for some games - SBEMU-X NOTE: unlikely to be needed
         int zeros = TRUE;
@@ -1060,15 +1064,15 @@ static void MAIN_Interrupt()
         }
 #endif
         //for(int i = 0; i < samples; ++i) _LOG("%d ",((uint8_t*)MAIN_PCM)[i]); _LOG("\n");
-        cv_bits_n_to_m(MAIN_PCM, samples, 1, 2);
+        cv_bits_n_to_m(MAIN_PCM, direct_count, 1, 2);
         //for(int i = 0; i < samples; ++i) _LOG("%d ",MAIN_PCM[i]); _LOG("\n");
         // the actual sample rate is derived from current count of samples in direct output buffer
-        samples = mixer_speed_lq(MAIN_PCM, samples, 1, (samples * aui.freq_card) / aui.card_samples_per_int, aui.freq_card);
+        samples = mixer_speed_lq(MAIN_PCM, direct_count, 1, (direct_count * aui.freq_card) / samples, aui.freq_card);
+        //_LOG("%d\n", samples);
         //for(int i = 0; i < samples; ++i) _LOG("%d ",MAIN_PCM[i]); _LOG("\n");
         cv_channels_1_to_n(MAIN_PCM, samples, 2, 2);
         digital = TRUE;
     } else if(!MAIN_Options[OPT_OPL].value) {
-        _LOG("silence:%d %d\n",aui.card_samples_per_int);
         memset(MAIN_PCM, 0, samples*sizeof(int16_t)*2); //output muted samples.
     }
 
@@ -1390,6 +1394,19 @@ static void MAIN_TSR_Interrupt()
             MAIN_Options[OPT_COVOX].value = opt[OPT_COVOX].value;
 
             free(opt);
+        }
+        case 0xC0: {
+            // virtualize I/O write
+            // input: DX - port, BL - data
+            HDPMIPT_TrappedIO(MAIN_TSRREG.w.dx, MAIN_TSRREG.h.bl, 1);
+            break;
+        }
+        case 0xC1: {
+            // virtualize I/O read
+            // input: DX - port
+            // output: AL - data
+            MAIN_TSRREG.h.al = HDPMIPT_TrappedIO(MAIN_TSRREG.w.dx, MAIN_TSRREG.h.bl, 0);
+            break;
         }
         return;
     }

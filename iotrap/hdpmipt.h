@@ -10,6 +10,9 @@ BOOL HDPMIPT_Install_IOPortTrap(uint16_t start, uint16_t end, QEMM_IODT* inputp 
 
 BOOL HDPMIPT_Uninstall_IOPortTrap(QEMM_IOPT* inputp iopt);
 
+// simulate trapped I/O
+uint32_t HDPMIPT_TrappedIO(uint16_t port, uint8_t value, uint8_t out);
+
 void HDPMIPT_UntrappedIO_Write(uint16_t port, uint8_t value);
 uint8_t HDPMIPT_UntrappedIO_Read(uint16_t port);
 

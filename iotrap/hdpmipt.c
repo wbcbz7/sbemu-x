@@ -38,6 +38,22 @@ static uint16_t HDPMIPT_GetDS()
     return ds;
 }
 
+// simulate trapped I/O
+uint32_t HDPMIPT_TrappedIO(uint16_t port, uint8_t value, uint8_t out) {
+    QEMM_TrapFlags |= QEMM_TF_PM;
+    QEMM_IODT_LINK* link = HDPMIPT_IODT_header.next;
+    while(link)
+    {
+        for(int i = 0; i < link->count; ++i)
+        {
+            if(link->iodt[i].port == port)
+                return link->iodt[i].handler(port, value, out);
+        }
+        link = link->next;
+    }
+    return value;
+}
+
 static uint32_t __attribute__((noinline)) HDPMIPT_TrapHandler()
 {
     uint32_t port = 0, out = 0, value = 0;

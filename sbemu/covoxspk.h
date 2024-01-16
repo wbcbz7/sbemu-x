@@ -33,6 +33,9 @@ uint8_t pcspeaker_timerctrl_read (uint16_t port);
 // init covox/speaker emulation
 int covoxspk_init(int covox, int stereo_on_1, int pcspeaker);
 
+// map BIOS Data Area and add emualted LPT address
+void covoxspk_set_bda_lpt(uint16_t port);
+
 // close it
 int covoxspk_done();
 
